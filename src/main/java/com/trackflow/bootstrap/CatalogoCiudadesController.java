@@ -1,0 +1,38 @@
+package com.trackflow.bootstrap;
+
+import com.trackflow.shared.geografia.CatalogoDeCiudades;
+import com.trackflow.shared.geografia.Ciudad;
+import jakarta.validation.constraints.NotBlank;
+import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/ciudades")
+public class CatalogoCiudadesController {
+
+    private static final int LIMITE = 10;
+
+    private final CatalogoDeCiudades ciudades;
+
+    public CatalogoCiudadesController(CatalogoDeCiudades ciudades) {
+        this.ciudades = ciudades;
+    }
+
+    public record CiudadResponse(Long id, String nombre, String departamento, String etiqueta) {
+
+        static CiudadResponse from(Ciudad ciudad) {
+            return new CiudadResponse(ciudad.id(), ciudad.nombre(), ciudad.departamento(), ciudad.etiqueta());
+        }
+    }
+
+    @GetMapping
+    public List<CiudadResponse> buscar(
+            @RequestParam("q") @NotBlank(message = "indique el texto a buscar") String q) {
+        return ciudades.buscar(q, LIMITE).stream()
+                .map(CiudadResponse::from)
+                .toList();
+    }
+}

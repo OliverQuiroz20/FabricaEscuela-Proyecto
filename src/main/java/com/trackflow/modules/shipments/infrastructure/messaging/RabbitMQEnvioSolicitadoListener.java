@@ -1,24 +1,20 @@
 package com.trackflow.modules.shipments.infrastructure.messaging;
 
-import com.trackflow.modules.shipments.application.EnvioSolicitado;
-import com.trackflow.modules.shipments.application.EnvioSolicitadoPublisher;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.trackflow.modules.shipments.application.RegistrarEnvio;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 @Component
-public class RabbitMQEnvioSolicitadoPublisher implements EnvioSolicitadoPublisher {
+public class RabbitMQEnvioSolicitadoListener {
 
-    private final RabbitTemplate rabbitTemplate;
+    private final RegistrarEnvio registrarEnvio;
 
-    public RabbitMQEnvioSolicitadoPublisher(RabbitTemplate rabbitTemplate) {
-        this.rabbitTemplate = rabbitTemplate;
+    public RabbitMQEnvioSolicitadoListener(RegistrarEnvio registrarEnvio) {
+        this.registrarEnvio = registrarEnvio;
     }
 
-    @Override
-    public void publicar(EnvioSolicitado solicitud) {
-        rabbitTemplate.convertAndSend(
-                ShipmentsRabbitMQConfig.EXCHANGE,
-                ShipmentsRabbitMQConfig.ROUTING_KEY,
-                EnvioSolicitadoMensaje.from(solicitud));
+    @RabbitListener(queues = ShipmentsRabbitMQConfig.QUEUE)
+    public void recibir(EnvioSolicitadoMensaje mensaje) {
+        registrarEnvio.ejecutar(mensaje.toSolicitud());
     }
 }
