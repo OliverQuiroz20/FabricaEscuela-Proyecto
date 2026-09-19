@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: trackflow
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
+    envVars:
+      # Todos estos valores se definen en el dashboard de Render, nunca en este archivo.
+      - key: TRACKFLOW_DB_URL
+        sync: false
+      - key: TRACKFLOW_DB_USER
+        sync: false
+      - key: TRACKFLOW_DB_PASSWORD
+        sync: false
+      - key: RABBITMQ_HOST
+        sync: false
+      - key: RABBITMQ_USER
+        sync: false
+      - key: RABBITMQ_PASSWORD
+        sync: false
+      - key: RABBITMQ_VHOST
+        sync: false
+      - key: RABBITMQ_PORT
+        value: "5671"
+      - key: RABBITMQ_SSL
+        value: "true"
+      # Sin clave de operador la escritura queda abierta: definirla siempre aquí.
+      - key: TRACKFLOW_OPERADOR_CLAVE
+        sync: false
+      # Sin esta clave, /api/admin/** queda inaccesible (cerrado por defecto).
+      - key: TRACKFLOW_ADMIN_CLAVE
+        sync: false
+      # Render genera el secreto de firma; si se regenera, los tokens vigentes caducan.
+      - key: TRACKFLOW_JWT_SECRET
+        generateValue: true
