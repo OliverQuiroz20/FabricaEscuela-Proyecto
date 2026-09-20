@@ -25,6 +25,8 @@ public class ConsultaEnvioController {
         return ResponseEntity.ok(new TrackingResponse(
                 view.getTrackingNumber(),
                 view.getStatus(),
+                view.getSenderName(),
+                view.getOriginCity(),
                 view.getRecipientName(),
                 view.getDestinationCity(),
                 view.getRegisteredAt(),

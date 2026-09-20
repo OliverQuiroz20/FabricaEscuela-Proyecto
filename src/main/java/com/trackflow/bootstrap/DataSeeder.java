@@ -20,6 +20,13 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+/**
+ * Carga los envíos semilla del plan de calidad (sección 6.5), que permiten probar
+ * HU-02 y HU-03 sin depender de haber ejecutado HU-01 antes.
+ *
+ * Publica en las mismas colas que cualquier otro productor: los datos de prueba
+ * entran por el mismo camino que los reales, sin puerta trasera a la base de datos.
+ */
 @Component
 @ConditionalOnProperty(name = "trackflow.seed.enabled", havingValue = "true")
 public class DataSeeder implements ApplicationRunner {
@@ -27,8 +34,11 @@ public class DataSeeder implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
     private static final Duration ESPERA_MAXIMA = Duration.ofSeconds(15);
 
+    /** Envío recién registrado, sin movimientos. */
     public static final String SIN_MOVIMIENTOS = "TF000000000001";
+    /** Envío en tránsito, con historial. */
     public static final String EN_TRANSITO = "TF000000000002";
+    /** Envío ya entregado. */
     public static final String ENTREGADO = "TF000000000003";
 
     private final EnvioSolicitadoPublisher envios;
@@ -57,6 +67,8 @@ public class DataSeeder implements ApplicationRunner {
         solicitarEnvio(EN_TRANSITO, "Repuestos industriales");
         solicitarEnvio(ENTREGADO, "Equipo médico");
 
+        // Los eventos se rechazan si el envío aún no está registrado, así que hay que
+        // esperar a que la cola de solicitudes termine de procesarse.
         esperarA(EN_TRANSITO);
         esperarA(ENTREGADO);
 
@@ -72,6 +84,8 @@ public class DataSeeder implements ApplicationRunner {
     }
 
     private void solicitarEnvio(String trackingNumber, String descripcion) {
+        // Se buscan por nombre y no por identificador fijo: los ids del catálogo los
+        // asigna la migración y no son parte de su contrato.
         Ciudad origen = buscarCiudad("MEDELLÍN");
         Ciudad destino = buscarCiudad("BOGOTÁ");
 
@@ -82,6 +96,7 @@ public class DataSeeder implements ApplicationRunner {
                         origen.id()),
                 new Party("Beto Destinatario", TipoDocumento.CC, "79546218", "3004445566", "Carrera 7 #40-50",
                         destino.id()),
+                origen,
                 destino,
                 descripcion,
                 clock.instant()));

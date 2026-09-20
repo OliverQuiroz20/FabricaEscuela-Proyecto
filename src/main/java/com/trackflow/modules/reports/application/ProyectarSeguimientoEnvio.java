@@ -21,6 +21,9 @@ public class ProyectarSeguimientoEnvio {
         ShipmentTrackingView view = new ShipmentTrackingView(
                 event.trackingNumber(),
                 event.status(),
+                event.senderName(),
+                event.originCityId(),
+                event.originCity(),
                 event.recipientName(),
                 event.destinationCity(),
                 event.registeredAt()
