@@ -21,6 +21,15 @@ public class ShipmentTrackingView {
     private String status;
 
     @Column(nullable = false)
+    private String senderName;
+
+    @Column(nullable = false)
+    private Long originCityId;
+
+    @Column(nullable = false)
+    private String originCity;
+
+    @Column(nullable = false)
     private String recipientName;
 
     @Column(nullable = false)
@@ -38,10 +47,14 @@ public class ShipmentTrackingView {
     protected ShipmentTrackingView() {
     }
 
-    public ShipmentTrackingView(String trackingNumber, String status, String recipientName,
-                                String destinationCity, Instant registeredAt) {
+    public ShipmentTrackingView(String trackingNumber, String status, String senderName, Long originCityId,
+                                String originCity, String recipientName, String destinationCity,
+                                Instant registeredAt) {
         this.trackingNumber = trackingNumber;
         this.status = status;
+        this.senderName = senderName;
+        this.originCityId = originCityId;
+        this.originCity = originCity;
         this.recipientName = recipientName;
         this.destinationCity = destinationCity;
         this.registeredAt = registeredAt;
@@ -55,6 +68,9 @@ public class ShipmentTrackingView {
 
     public String getTrackingNumber() { return trackingNumber; }
     public String getStatus() { return status; }
+    public String getSenderName() { return senderName; }
+    public Long getOriginCityId() { return originCityId; }
+    public String getOriginCity() { return originCity; }
     public String getRecipientName() { return recipientName; }
     public String getDestinationCity() { return destinationCity; }
     public Instant getRegisteredAt() { return registeredAt; }
