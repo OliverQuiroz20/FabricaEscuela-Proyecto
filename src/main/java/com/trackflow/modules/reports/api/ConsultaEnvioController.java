@@ -28,6 +28,7 @@ public class ConsultaEnvioController {
                 view.getSenderName(),
                 view.getOriginCity(),
                 view.getRecipientName(),
+                view.getDestinationCityId(),
                 view.getDestinationCity(),
                 view.getRegisteredAt(),
                 view.getLastMovementPoint(),

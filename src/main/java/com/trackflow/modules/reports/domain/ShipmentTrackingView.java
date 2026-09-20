@@ -33,6 +33,9 @@ public class ShipmentTrackingView {
     private String recipientName;
 
     @Column(nullable = false)
+    private Long destinationCityId;
+
+    @Column(nullable = false)
     private String destinationCity;
 
     @Column(nullable = false)
@@ -48,22 +51,37 @@ public class ShipmentTrackingView {
     }
 
     public ShipmentTrackingView(String trackingNumber, String status, String senderName, Long originCityId,
-                                String originCity, String recipientName, String destinationCity,
-                                Instant registeredAt) {
+                                String originCity, String recipientName, Long destinationCityId,
+                                String destinationCity, Instant registeredAt) {
         this.trackingNumber = trackingNumber;
         this.status = status;
         this.senderName = senderName;
         this.originCityId = originCityId;
         this.originCity = originCity;
         this.recipientName = recipientName;
+        this.destinationCityId = destinationCityId;
         this.destinationCity = destinationCity;
         this.registeredAt = registeredAt;
     }
 
-    public void registrarMovimiento(String newStatus, String point, Instant movedAt) {
+    /**
+     * Ignora los movimientos anteriores al último aplicado: los reportes no llegan
+     * necesariamente en orden (un lector sin señal sincroniza tarde, o el broker
+     * reentrega un mensaje), y sin esta comprobación un reporte rezagado devolvía el
+     * estado a uno anterior aunque el envío ya hubiera avanzado.
+     *
+     * @return false si el movimiento es anterior al último aplicado y se ignora
+     */
+    public boolean registrarMovimiento(String newStatus, String point, Instant movedAt) {
+        if (lastMovementAt != null && movedAt.isBefore(lastMovementAt)) {
+            return false;
+        }
+
         this.status = newStatus;
         this.lastMovementPoint = point;
         this.lastMovementAt = movedAt;
+
+        return true;
     }
 
     public String getTrackingNumber() { return trackingNumber; }
@@ -72,6 +90,7 @@ public class ShipmentTrackingView {
     public Long getOriginCityId() { return originCityId; }
     public String getOriginCity() { return originCity; }
     public String getRecipientName() { return recipientName; }
+    public Long getDestinationCityId() { return destinationCityId; }
     public String getDestinationCity() { return destinationCity; }
     public Instant getRegisteredAt() { return registeredAt; }
     public String getLastMovementPoint() { return lastMovementPoint; }

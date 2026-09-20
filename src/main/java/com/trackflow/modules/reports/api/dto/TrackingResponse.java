@@ -8,6 +8,7 @@ public record TrackingResponse(
         String remitenteNombre,
         String ciudadOrigen,
         String recipientName,
+        Long destinationCityId,
         String destinationCity,
         Instant registeredAt,
         String lastMovementPoint,

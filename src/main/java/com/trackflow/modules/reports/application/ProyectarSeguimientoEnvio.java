@@ -25,6 +25,7 @@ public class ProyectarSeguimientoEnvio {
                 event.originCityId(),
                 event.originCity(),
                 event.recipientName(),
+                event.destinationCityId(),
                 event.destinationCity(),
                 event.registeredAt()
         );
@@ -35,12 +36,15 @@ public class ProyectarSeguimientoEnvio {
     public void alRegistrarEvento(EventoLogisticoRegistradoEvent event) {
         repository.findByTrackingNumber(event.trackingNumber())
                 .ifPresent(view -> {
-                    view.registrarMovimiento(
+                    boolean aplicado = view.registrarMovimiento(
                             event.resultingStatus(),
                             event.point(),
                             event.movedAt()
                     );
-                    repository.save(view);
+
+                    if (aplicado) {
+                        repository.save(view);
+                    }
                 });
     }
 }
