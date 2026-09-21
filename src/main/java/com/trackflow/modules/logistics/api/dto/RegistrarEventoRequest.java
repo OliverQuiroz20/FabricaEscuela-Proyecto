@@ -1,15 +1,32 @@
 package com.trackflow.modules.logistics.api.dto;
 
 import com.trackflow.modules.logistics.domain.EventType;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import java.time.Instant;
 
 public record RegistrarEventoRequest(
         @NotNull(message = "el tipo de evento es obligatorio") EventType tipo,
-        @NotBlank(message = "el punto de la cadena logística es obligatorio") String punto,
+
+        /**
+         * Id del centro del catálogo donde ocurrió el movimiento. Los válidos para
+         * este envío en este momento vienen en
+         * GET /api/shipments/{trackingNumber}/acciones.
+         *
+         * Es obligatorio: mientras existió como respaldo un punto de texto libre, un
+         * reporte sin centro se saltaba todas las reglas del recorrido, porque de un
+         * texto no se puede saber en qué ciudad ocurrió.
+         */
+        @NotNull(message = "el centro es obligatorio") Long centroId,
+
         String observaciones,
+
+        /**
+         * Nombre de quien reparte. Obligatorio solo cuando {@code tipo} es
+         * OUT_FOR_DELIVERY — para el resto de eventos no aplica y se ignora si llega.
+         */
+        String repartidorNombre,
 
         /**
          * Cuándo ocurrió el movimiento. Opcional: si no se envía se asume que acaba de
@@ -18,4 +35,9 @@ public record RegistrarEventoRequest(
          */
         @PastOrPresent(message = "el movimiento no puede haber ocurrido en el futuro")
         Instant ocurridoEn) {
+
+    @AssertTrue(message = "el repartidor es obligatorio para un evento OUT_FOR_DELIVERY")
+    public boolean isRepartidorPresenteSiAplica() {
+        return tipo != EventType.OUT_FOR_DELIVERY || (repartidorNombre != null && !repartidorNombre.isBlank());
+    }
 }

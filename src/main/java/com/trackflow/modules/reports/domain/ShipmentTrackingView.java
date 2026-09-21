@@ -32,6 +32,13 @@ public class ShipmentTrackingView {
     @Column(nullable = false)
     private String recipientName;
 
+    /**
+     * Se guarda siempre, pero solo se expone en la respuesta cuando el envío queda
+     * ENTREGADO: antes de eso el paquete no ha llegado ahí todavía.
+     */
+    @Column(nullable = false)
+    private String recipientAddress;
+
     @Column(nullable = false)
     private Long destinationCityId;
 
@@ -51,14 +58,15 @@ public class ShipmentTrackingView {
     }
 
     public ShipmentTrackingView(String trackingNumber, String status, String senderName, Long originCityId,
-                                String originCity, String recipientName, Long destinationCityId,
-                                String destinationCity, Instant registeredAt) {
+                                String originCity, String recipientName, String recipientAddress,
+                                Long destinationCityId, String destinationCity, Instant registeredAt) {
         this.trackingNumber = trackingNumber;
         this.status = status;
         this.senderName = senderName;
         this.originCityId = originCityId;
         this.originCity = originCity;
         this.recipientName = recipientName;
+        this.recipientAddress = recipientAddress;
         this.destinationCityId = destinationCityId;
         this.destinationCity = destinationCity;
         this.registeredAt = registeredAt;
@@ -90,6 +98,7 @@ public class ShipmentTrackingView {
     public Long getOriginCityId() { return originCityId; }
     public String getOriginCity() { return originCity; }
     public String getRecipientName() { return recipientName; }
+    public String getRecipientAddress() { return recipientAddress; }
     public Long getDestinationCityId() { return destinationCityId; }
     public String getDestinationCity() { return destinationCity; }
     public Instant getRegisteredAt() { return registeredAt; }

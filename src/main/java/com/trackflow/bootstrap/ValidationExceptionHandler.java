@@ -12,6 +12,14 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+/**
+ * Detalla qué campos obligatorios faltan, como piden los criterios de aceptación.
+ * La respuesta por defecto solo dice "Invalid request content", que no le sirve
+ * a quien está registrando el envío.
+ *
+ * Es transversal a todos los módulos y no depende de ninguno: solo traduce los
+ * errores de Bean Validation.
+ */
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice
 public class ValidationExceptionHandler {
@@ -31,6 +39,11 @@ public class ValidationExceptionHandler {
         return problema;
     }
 
+    /**
+     * Un valor fuera del catálogo (por ejemplo un tipo de documento inexistente)
+     * rompe la deserialización antes de llegar a Bean Validation. Sin esto la
+     * respuesta solo dice "Failed to read request".
+     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ProblemDetail cuerpoIlegible(HttpMessageNotReadableException e) {
         String causa = e.getMostSpecificCause().getMessage();
