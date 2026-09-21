@@ -12,5 +12,12 @@ public record TrackingResponse(
         String destinationCity,
         Instant registeredAt,
         String lastMovementPoint,
-        Instant lastMovementAt) {
+        Instant lastMovementAt,
+
+        /**
+         * Dirección del destinatario. Solo viene informada cuando status es
+         * DELIVERED: antes de eso el paquete no ha llegado ahí, así que mostrarla no
+         * tiene sentido; en cualquier otro estado este campo es null.
+         */
+        String recipientAddress) {
 }

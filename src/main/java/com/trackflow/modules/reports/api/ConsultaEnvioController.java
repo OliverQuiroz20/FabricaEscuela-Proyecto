@@ -22,6 +22,10 @@ public class ConsultaEnvioController {
     @GetMapping("/{trackingNumber}")
     public ResponseEntity<TrackingResponse> consultar(@PathVariable String trackingNumber) {
         ShipmentTrackingView view = consultarEstadoEnvio.ejecutar(trackingNumber);
+        // La dirección solo se expone una vez entregado: antes de eso el paquete no
+        // ha llegado ahí, así que mostrarla no tiene sentido.
+        String direccionSiEntregado = "DELIVERED".equals(view.getStatus()) ? view.getRecipientAddress() : null;
+
         return ResponseEntity.ok(new TrackingResponse(
                 view.getTrackingNumber(),
                 view.getStatus(),
@@ -32,7 +36,8 @@ public class ConsultaEnvioController {
                 view.getDestinationCity(),
                 view.getRegisteredAt(),
                 view.getLastMovementPoint(),
-                view.getLastMovementAt()
+                view.getLastMovementAt(),
+                direccionSiEntregado
         ));
     }
 }
