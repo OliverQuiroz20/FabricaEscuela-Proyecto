@@ -7,6 +7,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Reconstruye las proyecciones a partir de la fuente de verdad, para cuando una
+ * quede desincronizada porque su actualización falló tras registrarse el evento.
+ *
+ * Vive en bootstrap porque coordina dos módulos: es el único punto que puede
+ * conocerlos a ambos sin acoplarlos entre sí.
+ */
 @RestController
 @RequestMapping("/api/admin")
 public class ReconstruccionController {
@@ -19,6 +26,10 @@ public class ReconstruccionController {
         this.eventos = eventos;
     }
 
+    /**
+     * El orden importa: primero los envíos, para que existan antes de reaplicarles
+     * sus movimientos; después los eventos, en el orden en que ocurrieron.
+     */
     @PostMapping("/reconstruir-proyecciones")
     public Map<String, Integer> reconstruir() {
         int enviosRepublicados = envios.ejecutar();

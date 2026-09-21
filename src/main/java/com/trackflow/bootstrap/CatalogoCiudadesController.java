@@ -9,6 +9,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Alimenta el autocompletado de ciudad al registrar un envío: se escribe parte del
+ * nombre y se escoge de la lista, en lugar de teclearlo y que "Bogotá" y "Bogota
+ * D.C." acaben siendo dos ciudades.
+ *
+ * Vive en bootstrap por la misma razón que la reconstrucción de proyecciones: el
+ * catálogo es dato de referencia transversal y ningún módulo de negocio es su dueño.
+ */
 @RestController
 @RequestMapping("/api/ciudades")
 public class CatalogoCiudadesController {
