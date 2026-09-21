@@ -20,6 +20,7 @@ public class RabbitMQConfig {
     public static final String DEAD_LETTER_EXCHANGE = "logistics.dlx";
     public static final String DEAD_LETTER_QUEUE = "logistics.events.dlq";
 
+    /** Los mensajes viajan como JSON, para que cualquier productor pueda publicarlos. */
     @Bean
     MessageConverter jsonMessageConverter() {
         return new JacksonJsonMessageConverter();
@@ -30,6 +31,7 @@ public class RabbitMQConfig {
         return new TopicExchange(EXCHANGE, true, false);
     }
 
+    /** Los mensajes que el consumidor rechaza terminan aquí en vez de perderse. */
     @Bean
     TopicExchange deadLetterExchange() {
         return new TopicExchange(DEAD_LETTER_EXCHANGE, true, false);

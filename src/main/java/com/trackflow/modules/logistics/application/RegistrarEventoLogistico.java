@@ -52,6 +52,9 @@ public class RegistrarEventoLogistico {
                 entrante.tipo(),
                 entrante.punto(),
                 entrante.observaciones(),
+                entrante.centroId(),
+                entrante.ciudadNombre(),
+                entrante.repartidorNombre(),
                 entrante.ocurridoEn(),
                 now));
 

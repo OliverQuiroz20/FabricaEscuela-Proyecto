@@ -8,8 +8,11 @@ public record EventoLogisticoResponse(
         String trackingNumber,
         String tipo,
         String estadoResultante,
+        Long centroId,
         String punto,
+        String ciudadNombre,
         String observaciones,
+        String repartidorNombre,
         Instant ocurridoEn,
         Instant registradoEn) {
 
@@ -19,8 +22,11 @@ public record EventoLogisticoResponse(
                 event.getTrackingNumber(),
                 event.getType().name(),
                 event.getType().resultingStatus(),
+                event.getCenterId(),
                 event.getPoint(),
+                event.getCityName(),
                 event.getNotes(),
+                event.getDelivererName(),
                 event.getOccurredAt(),
                 event.getRegisteredAt());
     }

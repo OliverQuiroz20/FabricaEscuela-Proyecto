@@ -1,7 +1,9 @@
 package com.trackflow.bootstrap;
 
+import com.trackflow.modules.logistics.application.CatalogoDeCentros;
 import com.trackflow.modules.logistics.application.EventoLogisticoEntrante;
 import com.trackflow.modules.logistics.application.EventoLogisticoPublisher;
+import com.trackflow.modules.logistics.domain.Centro;
 import com.trackflow.modules.logistics.domain.EventType;
 import com.trackflow.modules.shipments.application.EnvioSolicitado;
 import com.trackflow.modules.shipments.application.EnvioSolicitadoPublisher;
@@ -13,6 +15,8 @@ import com.trackflow.shared.geografia.CatalogoDeCiudades;
 import com.trackflow.shared.geografia.Ciudad;
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -45,14 +49,16 @@ public class DataSeeder implements ApplicationRunner {
     private final EventoLogisticoPublisher eventos;
     private final ShipmentRepository shipments;
     private final CatalogoDeCiudades ciudades;
+    private final CatalogoDeCentros centros;
     private final Clock clock;
 
     public DataSeeder(EnvioSolicitadoPublisher envios, EventoLogisticoPublisher eventos, ShipmentRepository shipments,
-            CatalogoDeCiudades ciudades, Clock clock) {
+            CatalogoDeCiudades ciudades, CatalogoDeCentros centros, Clock clock) {
         this.envios = envios;
         this.eventos = eventos;
         this.shipments = shipments;
         this.ciudades = ciudades;
+        this.centros = centros;
         this.clock = clock;
     }
 
@@ -63,27 +69,51 @@ public class DataSeeder implements ApplicationRunner {
             return;
         }
 
-        solicitarEnvio(SIN_MOVIMIENTOS, "Documentos legales");
-        solicitarEnvio(EN_TRANSITO, "Repuestos industriales");
-        solicitarEnvio(ENTREGADO, "Equipo médico");
+        solicitarEnvio(SIN_MOVIMIENTOS, "Documentos legales", hace(2));
+        solicitarEnvio(EN_TRANSITO, "Repuestos industriales", hace(10));
+        solicitarEnvio(ENTREGADO, "Equipo médico", hace(36));
 
         // Los eventos se rechazan si el envío aún no está registrado, así que hay que
         // esperar a que la cola de solicitudes termine de procesarse.
         esperarA(EN_TRANSITO);
         esperarA(ENTREGADO);
 
-        publicarEvento("seed-evt-001", EN_TRANSITO, EventType.RECEIVED_AT_CENTER, "Centro de distribución Medellín");
-        publicarEvento("seed-evt-002", EN_TRANSITO, EventType.DISPATCHED, "Ruta Medellín - Bogotá");
+        // Los tres envíos semilla van de Medellín a Bogotá, así que los movimientos
+        // usan centros reales de esas dos ciudades y siguen el orden que exige
+        // FlujoLogistico: la semilla debe ser un recorrido que el propio sistema
+        // habría aceptado, no una secuencia cualquiera.
+        Ciudad medellin = buscarCiudad("MEDELLÍN");
+        Ciudad bogota = buscarCiudad("BOGOTÁ");
+        Centro centroOrigen = buscarCentro("Centro Norte", medellin.id());
+        Centro centroDestino = buscarCentro("Centro Fontibón", bogota.id());
 
-        publicarEvento("seed-evt-003", ENTREGADO, EventType.RECEIVED_AT_CENTER, "Centro de distribución Cali");
-        publicarEvento("seed-evt-004", ENTREGADO, EventType.OUT_FOR_DELIVERY, "Reparto Cali norte");
-        publicarEvento("seed-evt-005", ENTREGADO, EventType.DELIVERED, "Dirección del destinatario");
+        // En tránsito: entró al centro de origen y salió hacia el destino.
+        publicarEvento("seed-evt-001", EN_TRANSITO, EventType.RECEIVED_AT_CENTER, centroOrigen, medellin, hace(9));
+        publicarEvento("seed-evt-002", EN_TRANSITO, EventType.DISPATCHED, centroOrigen, medellin, hace(8));
+
+        // Entregado: el recorrido completo, de punta a punta.
+        publicarEvento("seed-evt-003", ENTREGADO, EventType.RECEIVED_AT_CENTER, centroOrigen, medellin, hace(35));
+        publicarEvento("seed-evt-004", ENTREGADO, EventType.DISPATCHED, centroOrigen, medellin, hace(33));
+        publicarEvento("seed-evt-005", ENTREGADO, EventType.ARRIVED_AT_DESTINATION_CENTER, centroDestino, bogota,
+                hace(9));
+        publicarEvento("seed-evt-006", ENTREGADO, EventType.OUT_FOR_DELIVERY, centroDestino, bogota,
+                "Carlos Repartidor", hace(5));
+        publicarEvento("seed-evt-007", ENTREGADO, EventType.DELIVERED, centroDestino, bogota, hace(2));
 
         log.info("Datos semilla encolados: {} (sin movimientos), {} (en tránsito), {} (entregado)",
                 SIN_MOVIMIENTOS, EN_TRANSITO, ENTREGADO);
     }
 
-    private void solicitarEnvio(String trackingNumber, String descripcion) {
+    /**
+     * Los movimientos se escalonan en el pasado en vez de compartir el instante de
+     * arranque: el historial se ordena por fecha de ocurrencia, y con marcas
+     * idénticas no habría forma de saber cuál fue el último.
+     */
+    private Instant hace(int horas) {
+        return clock.instant().minus(horas, ChronoUnit.HOURS);
+    }
+
+    private void solicitarEnvio(String trackingNumber, String descripcion, Instant registradoEn) {
         // Se buscan por nombre y no por identificador fijo: los ids del catálogo los
         // asigna la migración y no son parte de su contrato.
         Ciudad origen = buscarCiudad("MEDELLÍN");
@@ -99,7 +129,7 @@ public class DataSeeder implements ApplicationRunner {
                 origen,
                 destino,
                 descripcion,
-                clock.instant()));
+                registradoEn));
     }
 
     private Ciudad buscarCiudad(String nombre) {
@@ -109,9 +139,26 @@ public class DataSeeder implements ApplicationRunner {
                         "El catálogo de ciudades no tiene '%s'; revise la migración V4".formatted(nombre)));
     }
 
-    private void publicarEvento(String eventId, String trackingNumber, EventType tipo, String punto) {
+    private Centro buscarCentro(String nombre, Long ciudadId) {
+        return centros.buscar(nombre, ciudadId, 1).stream()
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException(
+                        "El catálogo de centros no tiene '%s' en la ciudad %d; revise la migración V6"
+                                .formatted(nombre, ciudadId)));
+    }
+
+    /** Resuelve el nombre y la ciudad del centro como lo haría AdmitirEventoLogistico. */
+    private void publicarEvento(String eventId, String trackingNumber, EventType tipo, Centro centro,
+            Ciudad ciudadCentro, Instant ocurridoEn) {
+        publicarEvento(eventId, trackingNumber, tipo, centro, ciudadCentro, null, ocurridoEn);
+    }
+
+    /** Variante con repartidor, para el único evento del seed que lo exige: OUT_FOR_DELIVERY. */
+    private void publicarEvento(String eventId, String trackingNumber, EventType tipo, Centro centro,
+            Ciudad ciudadCentro, String repartidorNombre, Instant ocurridoEn) {
         eventos.publicar(new EventoLogisticoEntrante(
-                eventId, trackingNumber, tipo, punto, null, clock.instant()));
+                eventId, trackingNumber, tipo, centro.getId(), centro.getName(), ciudadCentro.etiqueta(), null,
+                repartidorNombre, ocurridoEn));
     }
 
     private boolean existe(String trackingNumber) {

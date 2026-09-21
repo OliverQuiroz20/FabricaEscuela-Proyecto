@@ -1,9 +1,11 @@
 package com.trackflow.modules.logistics.api;
 
+import com.trackflow.modules.logistics.api.dto.AccionesDisponiblesResponse;
 import com.trackflow.modules.logistics.api.dto.EventoAdmitidoResponse;
 import com.trackflow.modules.logistics.api.dto.EventoLogisticoResponse;
 import com.trackflow.modules.logistics.api.dto.RegistrarEventoRequest;
 import com.trackflow.modules.logistics.application.AdmitirEventoLogistico;
+import com.trackflow.modules.logistics.application.ConsultarAccionesDisponibles;
 import com.trackflow.modules.logistics.application.ConsultarHistorial;
 import com.trackflow.modules.logistics.application.EventoLogisticoEntrante;
 import jakarta.validation.Valid;
@@ -22,35 +24,47 @@ import org.springframework.web.bind.annotation.RestController;
  * igual que haría cualquier punto de la cadena. Quien registra es el consumidor de la cola.
  */
 @RestController
-@RequestMapping("/api/shipments/{trackingNumber}/events")
+@RequestMapping("/api/shipments/{trackingNumber}")
 public class LogisticsEventController {
 
     private final AdmitirEventoLogistico admitirEventoLogistico;
     private final ConsultarHistorial consultarHistorial;
+    private final ConsultarAccionesDisponibles consultarAccionesDisponibles;
 
     public LogisticsEventController(AdmitirEventoLogistico admitirEventoLogistico,
-            ConsultarHistorial consultarHistorial) {
+            ConsultarHistorial consultarHistorial, ConsultarAccionesDisponibles consultarAccionesDisponibles) {
         this.admitirEventoLogistico = admitirEventoLogistico;
         this.consultarHistorial = consultarHistorial;
+        this.consultarAccionesDisponibles = consultarAccionesDisponibles;
     }
 
-    @PostMapping
+    @PostMapping("/events")
     public ResponseEntity<EventoAdmitidoResponse> admitir(@PathVariable String trackingNumber,
             @Valid @RequestBody RegistrarEventoRequest request) {
         EventoLogisticoEntrante evento = admitirEventoLogistico.ejecutar(new AdmitirEventoLogistico.Command(
                 trackingNumber,
                 request.tipo(),
-                request.punto(),
+                request.centroId(),
                 request.observaciones(),
+                request.repartidorNombre(),
                 request.ocurridoEn()));
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(EventoAdmitidoResponse.from(evento));
     }
 
-    @GetMapping
+    @GetMapping("/events")
     public List<EventoLogisticoResponse> historial(@PathVariable String trackingNumber) {
         return consultarHistorial.ejecutar(trackingNumber).stream()
                 .map(EventoLogisticoResponse::from)
                 .toList();
+    }
+
+    /**
+     * Qué movimientos admite el envío ahora y con qué centros, para que el operador
+     * escoja de una lista corta y correcta en vez del catálogo entero.
+     */
+    @GetMapping("/acciones")
+    public AccionesDisponiblesResponse acciones(@PathVariable String trackingNumber) {
+        return AccionesDisponiblesResponse.from(consultarAccionesDisponibles.ejecutar(trackingNumber));
     }
 }
